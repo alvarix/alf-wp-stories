@@ -1,0 +1,78 @@
+/* Admin frame editor styles. */
+
+.alf-wp-stories-editor .alf-wp-stories-field {
+	margin-bottom: 24px;
+}
+
+.alf-wp-stories-editor .alf-wp-stories-field > label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+
+.alf-wp-stories-cover {
+	max-width: 160px;
+	border: 1px dashed #c3c4c7;
+	border-radius: 4px;
+	padding: 6px;
+	background: #f6f7f7;
+}
+
+.alf-wp-stories-cover img {
+	width: 100%;
+	height: auto;
+	display: block;
+	border-radius: 2px;
+}
+
+.alf-wp-stories-placeholder {
+	color: #787c82;
+	margin: 12px;
+	text-align: center;
+}
+
+.alf-wp-stories-frames {
+	margin-bottom: 12px;
+}
+
+.alf-wp-stories-frame {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+	padding: 12px;
+	margin-bottom: 8px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	cursor: move;
+}
+
+.alf-wp-stories-drag-handle {
+	margin-top: 6px;
+	color: #787c82;
+	cursor: grab;
+}
+
+.alf-wp-stories-frame-preview {
+	width: 90px;
+	flex-shrink: 0;
+}
+
+.alf-wp-stories-frame-preview img {
+	width: 100%;
+	height: auto;
+	display: block;
+	border-radius: 2px;
+}
+
+.alf-wp-stories-frame-fields {
+	flex: 1;
+}
+
+.alf-wp-stories-frame-fields p {
+	margin: 0 0 6px;
+}
+
+.alf-wp-stories-frame.ui-sortable-helper {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
