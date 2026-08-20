@@ -256,6 +256,8 @@ class Rss {
 		$image = '';
 		if ( 'first_frame' === $source && ! empty( $story['frames'][0]['image_id'] ) ) {
 			$image = attachment_url( $story['frames'][0]['image_id'], $size );
+		} elseif ( 'social_cover' === $source && ! empty( $story['social_cover_id'] ) ) {
+			$image = attachment_url( (int) $story['social_cover_id'], $size );
 		} elseif ( 'cover' === $source ) {
 			$image = $this->image_for_size( $story, $size );
 		}
@@ -275,6 +277,13 @@ class Rss {
 	 * @return string
 	 */
 	private function image_for_size( $story, $size ) {
+		// Prefer the social cover (compliant derivative) for Metricool-facing feeds.
+		if ( ! empty( $story['social_cover_id'] ) ) {
+			$url = attachment_url( (int) $story['social_cover_id'], $size );
+			if ( $url ) {
+				return $url;
+			}
+		}
 		$story_model = Plugin::instance()->get( 'story' );
 		return $story_model->get_cover_url( $story['id'], $size );
 	}

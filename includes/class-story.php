@@ -161,15 +161,27 @@ class Story {
 		}
 
 		$frames  = $this->get_frames( $post->ID );
+
+		// Social cover (compliant derivative) from the ratio-check integration.
+		$social_id  = 0;
+		$social_url = '';
+		$integration = Plugin::instance()->get( 'integration' );
+		if ( $integration instanceof Integration ) {
+			$social_id  = $integration->get_social_cover_id( $post->ID );
+			$social_url = $social_id ? attachment_url( $social_id, 'large' ) : '';
+		}
+
 		$payload = array(
-			'id'         => (int) $post->ID,
-			'title'      => get_the_title( $post ),
-			'url'        => get_permalink( $post ),
-			'cover'      => $this->get_cover_url( $post->ID, 'large' ),
-			'cover_id'   => $this->get_cover_id( $post->ID ),
-			'caption'    => $this->get_caption( $post->ID ),
-			'frames'     => $this->frames_payload( $frames ),
-			'terms'      => $this->terms( $post->ID ),
+			'id'            => (int) $post->ID,
+			'title'         => get_the_title( $post ),
+			'url'           => get_permalink( $post ),
+			'cover'         => $this->get_cover_url( $post->ID, 'large' ),
+			'cover_id'      => $this->get_cover_id( $post->ID ),
+			'social_cover'  => $social_url,
+			'social_cover_id' => $social_id,
+			'caption'       => $this->get_caption( $post->ID ),
+			'frames'        => $this->frames_payload( $frames ),
+			'terms'         => $this->terms( $post->ID ),
 		);
 
 		/**

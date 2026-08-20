@@ -49,7 +49,7 @@ components.
 
 1. Upload the `alf-wp-stories` folder to `/wp-content/plugins/`.
 2. Activate the plugin through the Plugins menu in WordPress.
-3. Visit Settings → Visual Stories to configure the content type.
+3. Visit the Visual Stories admin menu → Settings to configure the content type.
 4. Add stories via the new admin menu.
 5. Add the Story Launcher block to any post or page.
 
@@ -66,6 +66,16 @@ Yes. Copy `archive-story.php` or `single-story.php` from the plugin's
 `templates/` folder into `{theme}/alf-wp-stories/` to override them.
 
 == Changelog ==
+
+= 1.1.0 =
+* Settings page moved under the story CPT admin menu; Settings link added to the Plugins list.
+* Tabbed UI: Settings | Auto-Post | Help.
+* Configurable filename variable extraction (grammar) with a live preview.
+* Batch auto-post creator: Media Library bulk action → modal → AJAX ingestion, grouping images into multi-frame stories by filename.
+* Idempotent ingestion: re-running updates existing stories instead of duplicating.
+* Story defaults: cover source, default post status, auto-open-on-single.
+* Theming: accent, ring, overlay emitted as scoped CSS variables.
+* Integration with the WP ALF Image Ratio Check plugin: non-compliant covers block publish; separate social cover (3:4) feeds RSS/OG/Metricool.
 
 = 1.0.0 =
 * Initial release.

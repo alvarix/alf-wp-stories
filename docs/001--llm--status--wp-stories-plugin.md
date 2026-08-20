@@ -2,7 +2,7 @@
 
 **Spec:** `docs/001--usr--wp-stories-plugin-spec.md`
 **Response:** `docs/001--llm--wp-stories-plugin-spec.md`
-**Status:** Implementation complete (unverified in a live WordPress environment)
+**Status:** v1.1.0 — extended per docs 002 & 003 (settings restructure, batch auto-post creator, ratio-check integration). Still unverified in a live WordPress environment.
 
 ## What was built
 

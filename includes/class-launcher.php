@@ -328,6 +328,11 @@ class Launcher {
 			$viewer->enqueue_viewer();
 			$viewer->enqueue_launcher_styles();
 		}
+		// Ensure theming vars also apply to the launcher handle.
+		$css = $this->options->theming_css();
+		if ( '' !== $css && ! wp_styles()->add_data( 'alf-wp-stories-launcher', 'alf-theming', true ) ) {
+			wp_add_inline_style( 'alf-wp-stories-launcher', $css );
+		}
 	}
 
 	/**

@@ -2,6 +2,9 @@
 /**
  * Plugin options: defaults, storage, sanitization, and the settings page.
  *
+ * The settings page lives under the story CPT admin menu and is tabbed:
+ *   Settings | Auto-Post | Help
+ *
  * @package ALF_WP_Stories
  */
 
@@ -15,6 +18,11 @@ defined( 'ABSPATH' ) || exit;
 class Options {
 
 	const OPTION_KEY = 'alf_wp_stories_options';
+
+	/** Page slug for the main (Settings tab) sections. */
+	const PAGE_SETTINGS  = 'alf-wp-stories';
+	/** Page slug for the Auto-Post tab sections. */
+	const PAGE_AUTOP_POST = 'alf-wp-stories-autopost';
 
 	/**
 	 * Default option values, keyed by section.
@@ -39,6 +47,7 @@ class Options {
 		add_action( 'admin_menu', array( $this, 'add_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( ALF_WP_STORIES_FILE ), array( $this, 'plugin_action_links' ) );
 	}
 
 	/**
@@ -48,29 +57,49 @@ class Options {
 	 */
 	private function build_defaults() {
 		return array(
-			'post_type' => array(
+			'post_type'        => array(
 				'plural'        => 'Client Stories',
 				'singular'      => 'Client Story',
 				'slug'          => 'client-stories',
 				'has_archive'   => true,
 				'show_in_rest'  => true,
 			),
-			'taxonomy'  => array(
+			'taxonomy'         => array(
 				'enabled'      => true,
 				'name'         => 'Clients',
 				'slug'         => 'clients',
 				'hierarchical' => false,
 			),
-			'viewer'    => array(
-				'frame_duration'   => 5000,
-				'autoplay'         => true,
-				'loop'             => true,
-				'show_progress'    => true,
-				'show_close'       => true,
-				'keyboard'         => true,
-				'swipe'            => true,
+			'viewer'           => array(
+				'frame_duration' => 5000,
+				'autoplay'       => true,
+				'loop'           => true,
+				'show_progress'  => true,
+				'show_close'     => true,
+				'keyboard'       => true,
+				'swipe'          => true,
 			),
-			'rss'       => array(
+			'story'            => array(
+				'default_cover_source'  => 'first_frame',
+				'default_post_status'   => 'publish',
+				'auto_open_on_single'   => true,
+			),
+			'theming'          => array(
+				'accent'             => '#c8ccd2',
+				'ring_width'         => 4,
+				'ring_style'         => 'solid',
+				'overlay'            => 'rgba(20,22,26,0.96)',
+				'launcher_background' => '#eceef1',
+			),
+			'filename_grammar' => array(
+				'delimiter' => '__',
+				'group_key' => 'title',
+				'segments'  => array(
+					array( 'target' => 'title',       'transform' => 'title_case' ),
+					array( 'target' => 'frame_order', 'transform' => 'integer' ),
+				),
+			),
+			'rss'              => array(
 				'enabled'                 => true,
 				'title'                   => '',
 				'description'             => '',
@@ -174,18 +203,32 @@ class Options {
 	}
 
 	/**
-	 * Register the settings submenu.
+	 * Add the settings submenu under the story CPT admin menu.
 	 *
 	 * @return void
 	 */
 	public function add_menu() {
-		add_options_page(
+		$key = $this->post_type_key();
+		add_submenu_page(
+			'edit.php?post_type=' . $key,
 			__( 'Visual Stories', 'alf-wp-stories' ),
-			__( 'Visual Stories', 'alf-wp-stories' ),
+			__( 'Settings', 'alf-wp-stories' ),
 			'manage_options',
 			'alf-wp-stories',
 			array( $this, 'render_page' )
 		);
+	}
+
+	/**
+	 * Add a Settings link to the plugin row on the Plugins list.
+	 *
+	 * @param string[] $links Existing links.
+	 * @return string[]
+	 */
+	public function plugin_action_links( $links ) {
+		$url = admin_url( 'edit.php?post_type=' . $this->post_type_key() . '&page=alf-wp-stories' );
+		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Settings', 'alf-wp-stories' ) . '</a>' );
+		return $links;
 	}
 
 	/**
@@ -203,44 +246,67 @@ class Options {
 			)
 		);
 
-		$this->add_section( 'post_type', __( 'Content Type', 'alf-wp-stories' ) );
-		$this->add_field( 'post_type', 'plural', __( 'Plural name', 'alf-wp-stories' ), 'text' );
-		$this->add_field( 'post_type', 'singular', __( 'Singular name', 'alf-wp-stories' ), 'text' );
-		$this->add_field( 'post_type', 'slug', __( 'URL slug', 'alf-wp-stories' ), 'text', __( 'Single posts at /{slug}/{story-slug}/ and archive at /{slug}/', 'alf-wp-stories' ) );
-		$this->add_field( 'post_type', 'has_archive', __( 'Enable archive', 'alf-wp-stories' ), 'checkbox' );
-		$this->add_field( 'post_type', 'show_in_rest', __( 'Enable REST API', 'alf-wp-stories' ), 'checkbox' );
+		// --- Settings tab sections ---
+		$this->add_section( 'post_type', __( 'Content Type', 'alf-wp-stories' ), self::PAGE_SETTINGS );
+		$this->add_field( 'post_type', 'plural', __( 'Plural name', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS );
+		$this->add_field( 'post_type', 'singular', __( 'Singular name', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS );
+		$this->add_field( 'post_type', 'slug', __( 'URL slug', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS, __( 'Single posts at /{slug}/{story-slug}/ and archive at /{slug}/', 'alf-wp-stories' ) );
+		$this->add_field( 'post_type', 'has_archive', __( 'Enable archive', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+		$this->add_field( 'post_type', 'show_in_rest', __( 'Enable REST API', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
 
-		$this->add_section( 'taxonomy', __( 'Taxonomy', 'alf-wp-stories' ) );
-		$this->add_field( 'taxonomy', 'enabled', __( 'Enable taxonomy', 'alf-wp-stories' ), 'checkbox' );
-		$this->add_field( 'taxonomy', 'name', __( 'Taxonomy name', 'alf-wp-stories' ), 'text' );
-		$this->add_field( 'taxonomy', 'slug', __( 'Taxonomy slug', 'alf-wp-stories' ), 'text' );
-		$this->add_field( 'taxonomy', 'hierarchical', __( 'Hierarchical (category-style)', 'alf-wp-stories' ), 'checkbox' );
+		$this->add_section( 'taxonomy', __( 'Taxonomy', 'alf-wp-stories' ), self::PAGE_SETTINGS );
+		$this->add_field( 'taxonomy', 'enabled', __( 'Enable taxonomy', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+		$this->add_field( 'taxonomy', 'name', __( 'Taxonomy name', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS );
+		$this->add_field( 'taxonomy', 'slug', __( 'Taxonomy slug', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS );
+		$this->add_field( 'taxonomy', 'hierarchical', __( 'Hierarchical (category-style)', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
 
-		$this->add_section( 'viewer', __( 'Viewer', 'alf-wp-stories' ) );
-		$this->add_field( 'viewer', 'frame_duration', __( 'Default frame duration (ms)', 'alf-wp-stories' ), 'number' );
-		$this->add_field( 'viewer', 'autoplay', __( 'Autoplay', 'alf-wp-stories' ), 'checkbox' );
-		$this->add_field( 'viewer', 'loop', __( 'Loop', 'alf-wp-stories' ), 'checkbox' );
-		$this->add_field( 'viewer', 'show_progress', __( 'Show progress indicators', 'alf-wp-stories' ), 'checkbox' );
-		$this->add_field( 'viewer', 'show_close', __( 'Show close button', 'alf-wp-stories' ), 'checkbox' );
-		$this->add_field( 'viewer', 'keyboard', __( 'Enable keyboard navigation', 'alf-wp-stories' ), 'checkbox' );
-		$this->add_field( 'viewer', 'swipe', __( 'Enable swipe navigation', 'alf-wp-stories' ), 'checkbox' );
+		$this->add_section( 'viewer', __( 'Viewer', 'alf-wp-stories' ), self::PAGE_SETTINGS );
+		$this->add_field( 'viewer', 'frame_duration', __( 'Default frame duration (ms)', 'alf-wp-stories' ), 'number', self::PAGE_SETTINGS );
+		$this->add_field( 'viewer', 'autoplay', __( 'Autoplay', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+		$this->add_field( 'viewer', 'loop', __( 'Loop', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+		$this->add_field( 'viewer', 'show_progress', __( 'Show progress indicators', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+		$this->add_field( 'viewer', 'show_close', __( 'Show close button', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+		$this->add_field( 'viewer', 'keyboard', __( 'Enable keyboard navigation', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+		$this->add_field( 'viewer', 'swipe', __( 'Enable swipe navigation', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
 
-		$this->add_section( 'rss', __( 'RSS Feed', 'alf-wp-stories' ) );
-		$this->add_field( 'rss', 'enabled', __( 'Enable dedicated feed', 'alf-wp-stories' ), 'checkbox' );
-		$this->add_field( 'rss', 'title', __( 'Feed title', 'alf-wp-stories' ), 'text', __( 'Leave empty to use the site name.', 'alf-wp-stories' ) );
-		$this->add_field( 'rss', 'description', __( 'Feed description', 'alf-wp-stories' ), 'textarea' );
-		$this->add_field( 'rss', 'count', __( 'Number of items', 'alf-wp-stories' ), 'number' );
-		$this->add_field( 'rss', 'orderby', __( 'Ordering', 'alf-wp-stories' ), 'select', '', array( 'date' => 'Date', 'title' => 'Title', 'menu_order' => 'Menu order' ) );
-		$this->add_field( 'rss', 'order', __( 'Order direction', 'alf-wp-stories' ), 'select', '', array( 'DESC' => 'Descending', 'ASC' => 'Ascending' ) );
-		$this->add_field( 'rss', 'taxonomy_filter', __( 'Taxonomy filtering', 'alf-wp-stories' ), 'select', '', array( 'all' => 'All terms', 'include' => 'Only selected terms', 'exclude' => 'Exclude selected terms' ) );
-		$this->add_field( 'rss', 'taxonomy_terms', __( 'Taxonomy terms (comma-separated slugs)', 'alf-wp-stories' ), 'text' );
-		$this->add_field( 'rss', 'item_title_source', __( 'Item title source', 'alf-wp-stories' ), 'select', '', array( 'post_title' => 'Post title', 'caption' => 'Caption', 'custom' => 'Custom template' ) );
-		$this->add_field( 'rss', 'item_description_source', __( 'Item description source', 'alf-wp-stories' ), 'select', '', array( 'caption' => 'Caption', 'post_excerpt' => 'Excerpt', 'none' => 'None' ) );
-		$this->add_field( 'rss', 'image_source', __( 'Image source', 'alf-wp-stories' ), 'select', '', array( 'cover' => 'Cover image', 'first_frame' => 'First frame', 'custom' => 'Custom field' ) );
-		$this->add_field( 'rss', 'image_size', __( 'Image size', 'alf-wp-stories' ), 'text', __( 'e.g. large, full, or a registered size.', 'alf-wp-stories' ) );
-		$this->add_field( 'rss', 'image_url_format', __( 'Image URL format', 'alf-wp-stories' ), 'select', '', array( 'absolute' => 'Absolute HTTPS', 'relative' => 'Relative' ) );
-		$this->add_field( 'rss', 'custom_fields', __( 'Custom fields (comma-separated meta keys)', 'alf-wp-stories' ), 'text' );
-		$this->add_field( 'rss', 'custom_template', __( 'Custom item template (placeholders: {title} {description} {link} {guid} {image})', 'alf-wp-stories' ), 'textarea' );
+		$this->add_section( 'story', __( 'Story Defaults', 'alf-wp-stories' ), self::PAGE_SETTINGS );
+		$this->add_field( 'story', 'default_cover_source', __( 'Default cover source', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'first_frame' => 'First frame', 'last_frame' => 'Last frame', 'largest' => 'Largest frame' ) );
+		$this->add_field( 'story', 'default_post_status', __( 'Default post status (batch create)', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'publish' => 'Publish', 'draft' => 'Draft' ) );
+		$this->add_field( 'story', 'auto_open_on_single', __( 'Auto-open viewer on single story page', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+
+		$this->add_section( 'theming', __( 'Theming', 'alf-wp-stories' ), self::PAGE_SETTINGS );
+		$this->add_field( 'theming', 'accent', __( 'Accent color (ring + progress)', 'alf-wp-stories' ), 'color', self::PAGE_SETTINGS );
+		$this->add_field( 'theming', 'ring_width', __( 'Ring width (px)', 'alf-wp-stories' ), 'number', self::PAGE_SETTINGS );
+		$this->add_field( 'theming', 'ring_style', __( 'Ring style', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'solid' => 'Solid', 'gradient' => 'Gradient' ) );
+		$this->add_field( 'theming', 'overlay', __( 'Viewer overlay background', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS, __( 'Any CSS color, e.g. rgba(20,22,26,0.96)', 'alf-wp-stories' ) );
+		$this->add_field( 'theming', 'launcher_background', __( 'Launcher placeholder background', 'alf-wp-stories' ), 'color', self::PAGE_SETTINGS );
+
+		$this->add_section( 'rss', __( 'RSS Feed', 'alf-wp-stories' ), self::PAGE_SETTINGS );
+		$this->add_field( 'rss', 'enabled', __( 'Enable dedicated feed', 'alf-wp-stories' ), 'checkbox', self::PAGE_SETTINGS );
+		$this->add_field( 'rss', 'title', __( 'Feed title', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS, __( 'Leave empty to use the site name.', 'alf-wp-stories' ) );
+		$this->add_field( 'rss', 'description', __( 'Feed description', 'alf-wp-stories' ), 'textarea', self::PAGE_SETTINGS );
+		$this->add_field( 'rss', 'count', __( 'Number of items', 'alf-wp-stories' ), 'number', self::PAGE_SETTINGS );
+		$this->add_field( 'rss', 'orderby', __( 'Ordering', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'date' => 'Date', 'title' => 'Title', 'menu_order' => 'Menu order' ) );
+		$this->add_field( 'rss', 'order', __( 'Order direction', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'DESC' => 'Descending', 'ASC' => 'Ascending' ) );
+		$this->add_field( 'rss', 'taxonomy_filter', __( 'Taxonomy filtering', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'all' => 'All terms', 'include' => 'Only selected terms', 'exclude' => 'Exclude selected terms' ) );
+		$this->add_field( 'rss', 'taxonomy_terms', __( 'Taxonomy terms (comma-separated slugs)', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS );
+		$this->add_field( 'rss', 'item_title_source', __( 'Item title source', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'post_title' => 'Post title', 'caption' => 'Caption', 'custom' => 'Custom template' ) );
+		$this->add_field( 'rss', 'item_description_source', __( 'Item description source', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'caption' => 'Caption', 'post_excerpt' => 'Excerpt', 'none' => 'None' ) );
+		$this->add_field( 'rss', 'image_source', __( 'Image source', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'cover' => 'Cover image', 'social_cover' => 'Social cover (compliant)', 'first_frame' => 'First frame', 'custom' => 'Custom field' ) );
+		$this->add_field( 'rss', 'image_size', __( 'Image size', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS, __( 'e.g. large, full, or a registered size.', 'alf-wp-stories' ) );
+		$this->add_field( 'rss', 'image_url_format', __( 'Image URL format', 'alf-wp-stories' ), 'select', self::PAGE_SETTINGS, '', array( 'absolute' => 'Absolute HTTPS', 'relative' => 'Relative' ) );
+		$this->add_field( 'rss', 'custom_fields', __( 'Custom fields (comma-separated meta keys)', 'alf-wp-stories' ), 'text', self::PAGE_SETTINGS );
+		$this->add_field( 'rss', 'custom_template', __( 'Custom item template (placeholders: {title} {description} {link} {guid} {image})', 'alf-wp-stories' ), 'textarea', self::PAGE_SETTINGS );
+
+		// --- Auto-Post tab section ---
+		$this->add_section( 'filename_grammar', __( 'Filename Variable Extraction', 'alf-wp-stories' ), self::PAGE_AUTOP_POST );
+		add_settings_field(
+			'alf_wp_stories_filename_grammar_segments',
+			__( 'Segment mapping', 'alf-wp-stories' ),
+			array( $this, 'render_grammar_field' ),
+			self::PAGE_AUTOP_POST,
+			'alf_wp_stories_filename_grammar'
+		);
 	}
 
 	/**
@@ -248,14 +314,15 @@ class Options {
 	 *
 	 * @param string $id    Section id.
 	 * @param string $title Section title.
+	 * @param string $page Page slug.
 	 * @return void
 	 */
-	private function add_section( $id, $title ) {
+	private function add_section( $id, $title, $page ) {
 		add_settings_section(
 			'alf_wp_stories_' . $id,
 			$title,
 			'__return_false',
-			'alf-wp-stories'
+			$page
 		);
 	}
 
@@ -265,17 +332,18 @@ class Options {
 	 * @param string $section Section id.
 	 * @param string $key     Field key within the section.
 	 * @param string $label   Field label.
-	 * @param string $type    Field type (text, number, checkbox, textarea, select).
+	 * @param string $type    Field type (text, number, checkbox, textarea, select, color).
+	 * @param string $page    Page slug.
 	 * @param string $help    Optional help text.
 	 * @param array  $choices Choices for select fields.
 	 * @return void
 	 */
-	private function add_field( $section, $key, $label, $type, $help = '', $choices = array() ) {
+	private function add_field( $section, $key, $label, $type, $page, $help = '', $choices = array() ) {
 		add_settings_field(
 			'alf_wp_stories_' . $section . '_' . $key,
 			$label,
 			array( $this, 'render_field' ),
-			'alf-wp-stories',
+			$page,
 			'alf_wp_stories_' . $section,
 			array(
 				'section' => $section,
@@ -314,6 +382,15 @@ class Options {
 			case 'number':
 				printf(
 					'<input type="number" id="%1$s" name="%2$s" value="%3$s" class="small-text" />',
+					esc_attr( $id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value )
+				);
+				break;
+
+			case 'color':
+				printf(
+					'<input type="text" id="%1$s" name="%2$s" value="%3$s" class="alf-wp-stories-color-field" />',
 					esc_attr( $id ),
 					esc_attr( $name ),
 					esc_attr( (string) $value )
@@ -359,6 +436,104 @@ class Options {
 	}
 
 	/**
+	 * Render the filename-grammar segment repeater.
+	 *
+	 * @return void
+	 */
+	public function render_grammar_field() {
+		$grammar  = $this->get( 'filename_grammar', array() );
+		$segments = isset( $grammar['segments'] ) && is_array( $grammar['segments'] ) ? $grammar['segments'] : array();
+
+		$targets = self::grammar_targets();
+		$transforms = self::grammar_transforms();
+
+		echo '<p class="description">' . esc_html__( 'Delimiter is fixed to "__" (double underscore). Map each filename segment to a story field.', 'alf-wp-stories' ) . '</p>';
+
+		// Group key selector.
+		$group_key = isset( $grammar['group_key'] ) ? $grammar['group_key'] : 'title';
+		printf(
+			'<p><label><strong>%s</strong> ',
+			esc_html__( 'Group images into one story by:', 'alf-wp-stories' )
+		);
+		printf( '<select name="%s">', esc_attr( self::OPTION_KEY . '[filename_grammar][group_key]' ) );
+		foreach ( $targets as $tval => $tlabel ) {
+			printf( '<option value="%s" %s>%s</option>', esc_attr( $tval ), selected( $group_key, $tval, false ), esc_html( $tlabel ) );
+		}
+		echo '</select></label></p>';
+
+		echo '<table class="widefat striped alf-wp-stories-grammar-table" style="max-width:640px;">';
+		echo '<thead><tr><th>#</th><th>Target</th><th>Transform</th><th></th></tr></thead><tbody>';
+		foreach ( $segments as $i => $seg ) {
+			$this->grammar_row( $i, $seg, $targets, $transforms );
+		}
+		echo '</tbody></table>';
+		printf( '<p><button type="button" class="button alf-wp-stories-grammar-add">%s</button></p>', esc_html__( 'Add segment', 'alf-wp-stories' ) );
+
+		// Live preview tool.
+		echo '<hr /><h3>' . esc_html__( 'Live preview', 'alf-wp-stories' ) . '</h3>';
+		printf( '<p><input type="text" id="alf-wp-stories-grammar-preview-input" class="regular-text" placeholder="e.g. mabel__01.jpg" /> <button type="button" class="button" id="alf-wp-stories-grammar-preview-btn">%s</button></p>', esc_html__( 'Preview', 'alf-wp-stories' ) );
+		echo '<div id="alf-wp-stories-grammar-preview-out" class="alf-wp-stories-grammar-preview"></div>';
+	}
+
+	/**
+	 * Output one grammar segment row.
+	 *
+	 * @param int   $i         Index.
+	 * @param array $seg       Segment {target, transform}.
+	 * @param array $targets   Target options.
+	 * @param array $transforms Transform options.
+	 * @return void
+	 */
+	private function grammar_row( $i, $seg, $targets, $transforms ) {
+		$target    = isset( $seg['target'] ) ? $seg['target'] : 'ignore';
+		$transform = isset( $seg['transform'] ) ? $seg['transform'] : 'raw';
+		$base      = self::OPTION_KEY . '[filename_grammar][segments][' . (int) $i . ']';
+		echo '<tr>';
+		echo '<td>' . (int) ( $i + 1 ) . '</td>';
+		echo '<td><select name="' . esc_attr( $base ) . '[target]">';
+		foreach ( $targets as $tval => $tlabel ) {
+			echo '<option value="' . esc_attr( $tval ) . '" ' . selected( $target, $tval, false ) . '>' . esc_html( $tlabel ) . '</option>';
+		}
+		echo '</select></td>';
+		echo '<td><select name="' . esc_attr( $base ) . '[transform]">';
+		foreach ( $transforms as $tval => $tlabel ) {
+			echo '<option value="' . esc_attr( $tval ) . '" ' . selected( $transform, $tval, false ) . '>' . esc_html( $tlabel ) . '</option>';
+		}
+		echo '</select></td>';
+		echo '<td><button type="button" class="button-link-delete alf-wp-stories-grammar-remove">' . esc_html__( 'Remove', 'alf-wp-stories' ) . '</button></td>';
+		echo '</tr>';
+	}
+
+	/**
+	 * Allowed segment targets.
+	 *
+	 * @return array
+	 */
+	public static function grammar_targets() {
+		return array(
+			'title'        => __( 'Story title', 'alf-wp-stories' ),
+			'caption'       => __( 'Caption', 'alf-wp-stories' ),
+			'tag'           => __( 'Tag (repeatable)', 'alf-wp-stories' ),
+			'frame_order'  => __( 'Frame order (integer)', 'alf-wp-stories' ),
+			'ignore'        => __( 'Ignore', 'alf-wp-stories' ),
+		);
+	}
+
+	/**
+	 * Allowed segment transforms.
+	 *
+	 * @return array
+	 */
+	public static function grammar_transforms() {
+		return array(
+			'raw'        => __( 'Raw', 'alf-wp-stories' ),
+			'title_case' => __( 'Title case', 'alf-wp-stories' ),
+			'slugify'    => __( 'Slugify', 'alf-wp-stories' ),
+			'integer'    => __( 'Integer', 'alf-wp-stories' ),
+		);
+	}
+
+	/**
 	 * Sanitize the full options array on save.
 	 *
 	 * @param mixed $input Raw submitted options.
@@ -393,6 +568,19 @@ class Options {
 				'keyboard'       => ! empty( $input['viewer']['keyboard'] ),
 				'swipe'          => ! empty( $input['viewer']['swipe'] ),
 			),
+			'story'     => array(
+				'default_cover_source' => isset( $input['story']['default_cover_source'] ) && in_array( $input['story']['default_cover_source'], array( 'first_frame', 'last_frame', 'largest' ), true ) ? $input['story']['default_cover_source'] : 'first_frame',
+				'default_post_status'  => isset( $input['story']['default_post_status'] ) && 'draft' === $input['story']['default_post_status'] ? 'draft' : 'publish',
+				'auto_open_on_single'  => ! empty( $input['story']['auto_open_on_single'] ),
+			),
+			'theming'   => array(
+				'accent'              => isset( $input['theming']['accent'] ) ? sanitize_hex_color( $input['theming']['accent'] ) : $d['theming']['accent'],
+				'ring_width'         => isset( $input['theming']['ring_width'] ) ? absint( $input['theming']['ring_width'] ) : $d['theming']['ring_width'],
+				'ring_style'         => isset( $input['theming']['ring_style'] ) && 'gradient' === $input['theming']['ring_style'] ? 'gradient' : 'solid',
+				'overlay'            => isset( $input['theming']['overlay'] ) ? sanitize_text_field( $input['theming']['overlay'] ) : $d['theming']['overlay'],
+				'launcher_background' => isset( $input['theming']['launcher_background'] ) ? sanitize_hex_color( $input['theming']['launcher_background'] ) : $d['theming']['launcher_background'],
+			),
+			'filename_grammar' => $this->sanitize_grammar( isset( $input['filename_grammar'] ) ? $input['filename_grammar'] : array() ),
 			'rss'       => array(
 				'enabled'                 => ! empty( $input['rss']['enabled'] ),
 				'title'                   => isset( $input['rss']['title'] ) ? sanitize_text_field( $input['rss']['title'] ) : $d['rss']['title'],
@@ -418,25 +606,66 @@ class Options {
 	}
 
 	/**
+	 * Sanitize the filename grammar.
+	 *
+	 * @param array $input Raw grammar.
+	 * @return array
+	 */
+	private function sanitize_grammar( $input ) {
+		$d = $this->defaults['filename_grammar'];
+		$targets = array_keys( self::grammar_targets() );
+		$transforms = array_keys( self::grammar_transforms() );
+
+		$segments = array();
+		if ( isset( $input['segments'] ) && is_array( $input['segments'] ) ) {
+			foreach ( $input['segments'] as $seg ) {
+				if ( ! is_array( $seg ) ) {
+					continue;
+			}
+				$target    = isset( $seg['target'] ) && in_array( $seg['target'], $targets, true ) ? $seg['target'] : 'ignore';
+				$transform = isset( $seg['transform'] ) && in_array( $seg['transform'], $transforms, true ) ? $seg['transform'] : 'raw';
+				$segments[] = array(
+					'target'    => $target,
+					'transform' => $transform,
+				);
+			}
+		}
+		if ( empty( $segments ) ) {
+			$segments = $d['segments'];
+		}
+
+		$group_key = isset( $input['group_key'] ) && in_array( $input['group_key'], $targets, true ) ? $input['group_key'] : 'title';
+
+		return array(
+			'delimiter' => '__', // fixed.
+			'group_key' => $group_key,
+			'segments'  => $segments,
+		);
+	}
+
+	/**
 	 * Enqueue admin assets on the settings screen only.
 	 *
 	 * @param string $hook Current admin screen hook suffix.
 	 * @return void
 	 */
 	public function enqueue_admin( $hook ) {
-		if ( 'settings_page_alf-wp-stories' !== $hook ) {
-			return;
+		$is_settings = ( false !== strpos( (string) $hook, 'page_alf-wp-stories' ) );
+		if ( $is_settings ) {
+			wp_enqueue_style( 'wp-color-picker' );
+			wp_enqueue_style( 'alf-wp-stories-admin', ALF_WP_STORIES_URL . 'assets/css/admin.css', array(), ALF_WP_STORIES_VERSION );
+			wp_enqueue_script( 'alf-wp-stories-admin-grammar', ALF_WP_STORIES_URL . 'assets/js/admin-grammar.js', array( 'jquery', 'wp-color-picker' ), ALF_WP_STORIES_VERSION, true );
+			wp_localize_script( 'alf-wp-stories-admin-grammar', 'alfWpStoriesGrammar', array(
+				'nonce'     => wp_create_nonce( 'alf_wp_stories_preview_filename' ),
+				'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+				'targets'    => self::grammar_targets(),
+				'transforms' => self::grammar_transforms(),
+			) );
 		}
-		wp_enqueue_style(
-			'alf-wp-stories-admin',
-			ALF_WP_STORIES_URL . 'assets/css/admin.css',
-			array(),
-			ALF_WP_STORIES_VERSION
-		);
 	}
 
 	/**
-	 * Render the settings page, including a feed preview/test tool.
+	 * Render the tabbed settings page.
 	 *
 	 * @return void
 	 */
@@ -445,33 +674,106 @@ class Options {
 			return;
 		}
 		$feed_url = home_url( user_trailingslashit( $this->get( 'post_type.slug', 'client-stories' ) ) . 'feed/' );
+		$singular = $this->get( 'post_type.singular', 'Client Story' );
+		$plural   = $this->get( 'post_type.plural', 'Client Stories' );
+		$shortcode = '[visual_story_launcher limit="1"]';
 		?>
 		<div class="wrap alf-wp-stories-settings">
 			<h1><?php esc_html_e( 'Visual Stories', 'alf-wp-stories' ); ?></h1>
-			<form method="post" action="options.php">
-				<?php
-				settings_fields( 'alf_wp_stories_group' );
-				do_settings_sections( 'alf-wp-stories' );
-				submit_button();
-				?>
-			</form>
+			<nav class="nav-tab-wrapper" style="margin-bottom:1.5em;">
+				<a href="#alf-wp-stories-tab-settings" class="nav-tab nav-tab-active" data-tab="alf-wp-stories-tab-settings"><?php esc_html_e( 'Settings', 'alf-wp-stories' ); ?></a>
+				<a href="#alf-wp-stories-tab-autopost" class="nav-tab" data-tab="alf-wp-stories-tab-autopost"><?php esc_html_e( 'Auto-Post', 'alf-wp-stories' ); ?></a>
+				<a href="#alf-wp-stories-tab-help" class="nav-tab" data-tab="alf-wp-stories-tab-help"><?php esc_html_e( 'Help', 'alf-wp-stories' ); ?></a>
+			</nav>
 
-			<hr />
-			<h2><?php esc_html_e( 'Feed Preview &amp; Test', 'alf-wp-stories' ); ?></h2>
-			<p>
-				<?php esc_html_e( 'Dedicated feed URL:', 'alf-wp-stories' ); ?>
-				<code><?php echo esc_html( $feed_url ); ?></code>
-			</p>
-			<?php if ( $this->get( 'rss.enabled', true ) ) : ?>
-				<p>
-					<a class="button" href="<?php echo esc_url( $feed_url ); ?>" target="_blank" rel="noopener">
-						<?php esc_html_e( 'Open feed', 'alf-wp-stories' ); ?>
-					</a>
-				</p>
-			<?php else : ?>
-				<p class="description"><?php esc_html_e( 'The feed is currently disabled.', 'alf-wp-stories' ); ?></p>
-			<?php endif; ?>
+			<form method="post" action="options.php">
+				<?php settings_fields( 'alf_wp_stories_group' ); ?>
+
+				<div id="alf-wp-stories-tab-settings">
+					<?php do_settings_sections( self::PAGE_SETTINGS ); ?>
+				</div>
+
+				<div id="alf-wp-stories-tab-autopost" style="display:none;">
+					<?php do_settings_sections( self::PAGE_AUTOP_POST ); ?>
+				</div>
+
+				<div id="alf-wp-stories-tab-help" style="display:none;">
+					<h2><?php esc_html_e( 'How to use', 'alf-wp-stories' ); ?></h2>
+					<ol>
+						<li><?php esc_html_e( 'Name your image files using the filename convention (see Auto-Post tab).', 'alf-wp-stories' ); ?></li>
+						<li><?php esc_html_e( 'Upload images to the Media Library.', 'alf-wp-stories' ); ?></li>
+						<li><?php esc_html_e( 'Select images, choose "Create Stories" from Bulk Actions, confirm in the modal.', 'alf-wp-stories' ); ?></li>
+						<li><?php esc_html_e( 'Add the Story Launcher block or the shortcode below to any page.', 'alf-wp-stories' ); ?></li>
+					</ol>
+					<h3><?php esc_html_e( 'Shortcode', 'alf-wp-stories' ); ?></h3>
+					<p><code><?php echo esc_html( $shortcode ); ?></code></p>
+					<p class="description"><?php esc_html_e( 'Optional parameters: story, limit, taxonomy, term, size, show_title, ring.', 'alf-wp-stories' ); ?></p>
+
+					<h3><?php esc_html_e( 'RSS Feed', 'alf-wp-stories' ); ?></h3>
+					<p><code><?php echo esc_html( $feed_url ); ?></code></p>
+					<?php if ( $this->get( 'rss.enabled', true ) ) : ?>
+						<p><a class="button" href="<?php echo esc_url( $feed_url ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Open feed', 'alf-wp-stories' ); ?></a></p>
+					<?php else : ?>
+						<p class="description"><?php esc_html_e( 'The feed is currently disabled.', 'alf-wp-stories' ); ?></p>
+					<?php endif; ?>
+				</div>
+
+				<?php submit_button(); ?>
+			</form>
 		</div>
+		<script>
+		( function () {
+			var tabs = document.querySelectorAll( '.alf-wp-stories-settings .nav-tab' );
+			tabs.forEach( function ( tab ) {
+				tab.addEventListener( 'click', function ( e ) {
+					e.preventDefault();
+				tabs.forEach( function ( t ) { t.classList.remove( 'nav-tab-active' ); } );
+				['settings','autopost','help'].forEach( function ( k ) {
+					document.getElementById( 'alf-wp-stories-tab-' + k ).style.display = 'none';
+				} );
+				tab.classList.add( 'nav-tab-active' );
+				document.getElementById( tab.dataset.tab ).style.display = '';
+			} );
+			} );
+		} )();
+		</script>
 		<?php
 	}
+
+	/**
+	 * Build scoped CSS variables for theming, applied to the viewer/launcher.
+	 *
+	 * Only emits properties that differ from defaults, to avoid global noise.
+	 *
+	 * @return string CSS rules (may be empty).
+	 */
+	public function theming_css() {
+		$t = $this->get( 'theming', array() );
+		$d = $this->defaults['theming'];
+		$vars = array();
+		if ( isset( $t['accent'] ) && $t['accent'] !== $d['accent'] ) {
+			$vars['--alf-wp-stories-accent'] = $t['accent'];
+		}
+		if ( isset( $t['ring_width'] ) && (int) $t['ring_width'] !== (int) $d['ring_width'] ) {
+			$vars['--alf-wp-stories-ring-width'] = (int) $t['ring_width'] . 'px';
+		}
+		if ( isset( $t['ring_style'] ) && $t['ring_style'] !== $d['ring_style'] ) {
+			$vars['--alf-wp-stories-ring-style'] = $t['ring_style'];
+		}
+		if ( isset( $t['overlay'] ) && $t['overlay'] !== $d['overlay'] ) {
+			$vars['--alf-wp-stories-overlay'] = $t['overlay'];
+		}
+		if ( isset( $t['launcher_background'] ) && $t['launcher_background'] !== $d['launcher_background'] ) {
+			$vars['--alf-wp-stories-launcher-bg'] = $t['launcher_background'];
+		}
+		if ( empty( $vars ) ) {
+			return '';
+		}
+		$css = '';
+		foreach ( $vars as $prop => $val ) {
+			$css .= $prop . ':' . $val . ';';
+		}
+		return '.alf-wp-stories-viewer,.alf-wp-stories-launcher{' . $css . '}';
+	}
 }
+

@@ -3,7 +3,7 @@
  * Plugin Name:       ALF WP Stories
  * Plugin URI:        https://example.com/alf-wp-stories
  * Description:       A configurable, multi-frame visual story content type with an Instagram-style viewer, launcher block, shortcode, REST API, Open Graph, and a dedicated configurable RSS feed. No dependency on Google Web Stories.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Alvar Sirlin
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ALF_WP_STORIES_VERSION', '1.0.0' );
+define( 'ALF_WP_STORIES_VERSION', '1.1.0' );
 define( 'ALF_WP_STORIES_FILE', __FILE__ );
 define( 'ALF_WP_STORIES_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ALF_WP_STORIES_URL', plugin_dir_url( __FILE__ ) );

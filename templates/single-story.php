@@ -13,6 +13,8 @@ get_header();
 
 $story_model = ALF_WP_Stories\Plugin::instance()->get( 'story' );
 $viewer      = ALF_WP_Stories\Plugin::instance()->get( 'viewer' );
+$options     = ALF_WP_Stories\Plugin::instance()->get( 'options' );
+$auto_open   = $options ? (bool) $options->get( 'story.auto_open_on_single', true ) : true;
 
 while ( have_posts() ) :
 	the_post();
@@ -31,7 +33,7 @@ while ( have_posts() ) :
 			</header>
 
 			<div class="alf-wp-stories-story-viewer-mount"
-				data-auto-open="1"
+				<?php echo $auto_open ? 'data-auto-open="1"' : ''; ?>
 				data-story-json="<?php echo esc_attr( wp_json_encode( $story ) ); ?>"></div>
 		</article>
 	</main>

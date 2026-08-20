@@ -103,6 +103,7 @@ class Viewer {
 	public function enqueue_viewer() {
 		wp_enqueue_style( 'alf-wp-stories-viewer' );
 		wp_enqueue_script( 'alf-wp-stories-viewer' );
+		$this->inline_theming();
 		wp_localize_script(
 			'alf-wp-stories-viewer',
 			'alfWpStoriesViewer',
@@ -113,6 +114,18 @@ class Viewer {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Emit theming CSS variables scoped to the viewer/launcher.
+	 *
+	 * @return void
+	 */
+	private function inline_theming() {
+		$css = $this->options->theming_css();
+		if ( '' !== $css && ! wp_styles()->add_data( 'alf-wp-stories-viewer', 'alf-theming', true ) ) {
+			wp_add_inline_style( 'alf-wp-stories-viewer', $css );
+		}
 	}
 
 	/**

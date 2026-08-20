@@ -61,21 +61,28 @@ class Plugin {
 		require_once ALF_WP_STORIES_DIR . 'includes/class-rss.php';
 		require_once ALF_WP_STORIES_DIR . 'includes/class-opengraph.php';
 		require_once ALF_WP_STORIES_DIR . 'includes/class-rest.php';
+		require_once ALF_WP_STORIES_DIR . 'includes/class-filename-parser.php';
+		require_once ALF_WP_STORIES_DIR . 'includes/class-bulk-ingest.php';
+		require_once ALF_WP_STORIES_DIR . 'includes/class-integration.php';
 
 		$options = new Options();
+		$parser  = new Filename_Parser( $options );
 
 		$services = array(
-			'options'    => $options,
-			'post_type'  => new Post_Type( $options ),
-			'taxonomy'   => new Taxonomy( $options ),
-			'story_meta' => new Story_Meta( $options ),
-			'story'      => new Story( $options ),
-			'templates'  => new Templates( $options ),
-			'viewer'     => new Viewer( $options ),
-			'launcher'   => new Launcher( $options ),
-			'rss'        => new Rss( $options ),
-			'opengraph'  => new OpenGraph( $options ),
-			'rest'       => new Rest( $options ),
+			'options'        => $options,
+			'post_type'      => new Post_Type( $options ),
+			'taxonomy'       => new Taxonomy( $options ),
+			'story_meta'     => new Story_Meta( $options ),
+			'story'          => new Story( $options ),
+			'templates'      => new Templates( $options ),
+			'viewer'         => new Viewer( $options ),
+			'launcher'       => new Launcher( $options ),
+			'rss'            => new Rss( $options ),
+			'opengraph'      => new OpenGraph( $options ),
+			'rest'           => new Rest( $options ),
+			'filename_parser' => $parser,
+			'bulk_ingest'    => new Bulk_Ingest( $options, $parser ),
+			'integration'    => new Integration( $options ),
 		);
 
 		foreach ( $services as $key => $service ) {

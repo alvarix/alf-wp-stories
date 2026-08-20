@@ -64,7 +64,14 @@ class OpenGraph {
 			'og:type'        => 'article',
 		);
 
-		if ( $story['cover'] ) {
+		if ( ! empty( $story['social_cover_id'] ) ) {
+			$tags['og:image'] = $story['social_cover'];
+			list( $width, $height ) = attachment_dimensions( (int) $story['social_cover_id'], 'large' );
+			if ( $width && $height ) {
+				$tags['og:image:width']  = $width;
+				$tags['og:image:height'] = $height;
+			}
+		} elseif ( $story['cover'] ) {
 			$tags['og:image'] = $story['cover'];
 			list( $width, $height ) = attachment_dimensions( $story['cover_id'], 'large' );
 			if ( $width && $height ) {

@@ -1,0 +1,86 @@
+/* Bulk-create modal + grammar repeater/preview. */
+
+.alf-wp-stories-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100100;
+}
+
+.alf-wp-stories-modal-overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(20, 22, 26, 0.7);
+}
+
+.alf-wp-stories-modal-content {
+	position: relative;
+	max-width: 520px;
+	margin: 8vh auto;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+	padding: 24px;
+}
+
+.alf-wp-stories-modal-content h2 {
+	margin: 0 0 12px;
+}
+
+.alf-wp-stories-modal-actions {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+	margin-top: 16px;
+}
+
+.alf-wp-stories-term-checkboxes {
+	margin-top: 8px;
+	max-height: 180px;
+	overflow-y: auto;
+}
+
+.alf-wp-stories-term-checkboxes label {
+	display: inline-block;
+	margin: 0 12px 6px 0;
+}
+
+.alf-wp-stories-ratio-warning {
+	color: #9b2222;
+	font-weight: 600;
+	background: #fde8e8;
+	border: 1px solid #f3c2c2;
+	border-radius: 4px;
+	padding: 8px 10px;
+}
+
+.alf-wp-stories-ratio-warning.is-ok {
+	color: #1a5d2e;
+	background: #e3f5e8;
+	border-color: #bfe3c9;
+}
+
+/* Grammar repeater */
+.alf-wp-stories-grammar-table th {
+	font-weight: 600;
+}
+
+/* Live preview output */
+.alf-wp-stories-grammar-preview {
+	min-height: 60px;
+	margin-top: 8px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 10px;
+	font-family: monospace;
+	font-size: 13px;
+	white-space: pre-wrap;
+}
+
+.alf-wp-stories-grammar-preview .kv {
+	display: block;
+}
+
+.alf-wp-stories-grammar-preview .kv span {
+	color: #555;
+}
