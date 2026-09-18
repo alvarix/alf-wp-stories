@@ -21,7 +21,7 @@
 	font: inherit;
 }
 
-.alf-wp-stories-launcher-item:focus-visible {
+X.alf-wp-stories-launcher-item:focus-visible {
 	outline: 2px solid currentColor;
 	outline-offset: 3px;
 	border-radius: 50%;

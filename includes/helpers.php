@@ -57,7 +57,7 @@ function attachment_url( $attachment_id, $size = 'large' ) {
 	if ( ! $url ) {
 		return '';
 	}
-	return set_url_scheme( $url, 'https' );
+	return set_url_scheme( $url);
 }
 
 /**
